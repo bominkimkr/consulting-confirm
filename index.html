@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>컨설팅 수행 확인서</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--ink:#1f2427;--line:#d9d9d9;--bg:#f4f4f2;--acc:#1f5fbf;--red:#c62828;--mute:#777}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.55}
+.app{max-width:640px;margin:0 auto;padding:16px 14px 120px}
+h1{font-size:22px;margin:8px 0 18px;text-align:center}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+.card h2{font-size:15px;margin:0 0 12px;color:var(--mute);letter-spacing:.06em}
+label{display:block;font-size:13px;color:var(--mute);margin:10px 0 4px}
+input[type=text],input[type=tel],input[type=date]{width:100%;font-size:17px;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+input:focus{outline:2px solid var(--acc);border-color:transparent}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.round{border:1px solid var(--line);border-radius:10px;padding:14px;margin-top:12px;position:relative}
+.round .t{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.round .t b{font-size:17px}
+.round .del{background:none;border:none;color:var(--red);font-size:13px;padding:6px}
+.sig{position:relative;margin-top:8px}
+.sig canvas{width:100%;height:170px;border:1.5px dashed #bbb;border-radius:8px;background:#fff;touch-action:none;display:block}
+.sig .hint{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;color:#c4c4c4;font-size:15px;pointer-events:none}
+.sig .clr{position:absolute;right:8px;top:8px;font-size:12px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:4px 9px;color:var(--mute)}
+.btn{display:block;width:100%;padding:14px;font-size:16px;font-weight:700;border:none;border-radius:10px;cursor:pointer}
+.btn.pri{background:var(--acc);color:#fff}.btn.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.add{background:#eef3fb;color:var(--acc);margin-top:12px;font-size:15px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom))}
+.bar .in{max-width:640px;margin:0 auto;display:flex;gap:10px}
+.msg{font-size:13px;color:var(--mute);text-align:center;margin-top:8px}
+.list{font-size:14px}.list a{display:block;padding:9px 0;border-bottom:1px solid #eee;color:var(--acc);text-decoration:none}
+.list small{color:var(--mute);margin-left:6px}
+/* 인쇄용 */
+#paper{position:absolute;left:-9999px;top:0;width:794px;min-height:1123px;background:#fff;padding:90px 80px;font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;color:#000}
+#paper h1{font-size:32px;text-align:center;text-decoration:underline;text-underline-offset:8px;margin:0 0 56px}
+#paper h3{font-size:18px;margin:0 0 10px}
+#paper p{font-size:17px;margin:0 0 6px;line-height:1.7}
+#paper .sec{margin-bottom:44px}
+#paper table{width:100%;border-collapse:collapse;margin-top:40px}
+#paper th,#paper td{border:1.5px solid #000;text-align:center;font-size:18px;height:88px;vertical-align:middle}
+#paper th{height:44px;font-size:19px}
+#paper td img{height:78px;max-width:100%}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>컨설팅 수행 확인서</h1>
+
+  <div class="card">
+    <h2>1. 수혜자 정보</h2>
+    <label>매장명</label><input type="text" id="store" placeholder="예) 구구치킨">
+    <label>성명 (대표자)</label><input type="text" id="owner" placeholder="예) 전일홍">
+    <label>연락처</label><input type="tel" id="phone" placeholder="010-0000-0000">
+  </div>
+
+  <div class="card">
+    <h2>2. 컨설팅 수행 개요</h2>
+    <label>담당 컨설턴트</label><input type="text" id="consultant" placeholder="예) 김보민, 양천석">
+    <p style="font-size:13px;color:var(--mute);margin:12px 0 0">본 수혜자는 상기 컨설턴트로부터 위와 같이 컨설팅서비스를 성실히 제공받았으며, 이에 따라 본 컨설팅 수행 확인서를 제출합니다.</p>
+  </div>
+
+  <div class="card">
+    <h2>3. 회차별 확인 · 서명</h2>
+    <div id="rounds"></div>
+    <button class="btn add" id="addRound">＋ 회차 추가 (최대 5회)</button>
+  </div>
+
+  <div class="card">
+    <h2>저장된 매장</h2>
+    <div class="list" id="saved"></div>
+    <div class="msg">이 폰(브라우저)에만 저장됩니다. 입력하면 자동 저장.</div>
+  </div>
+</div>
+
+<div class="bar"><div class="in">
+  <button class="btn sec" id="newBtn">새 매장</button>
+  <button class="btn pri" id="pdfBtn">PDF 저장</button>
+</div></div>
+
+<!-- 인쇄 레이아웃 (화면 밖) -->
+<div id="paper">
+  <h1>컨설팅 수행 확인서</h1>
+  <div class="sec">
+    <h3>1. 수혜자 정보</h3>
+    <p>- 매 장 명: <span id="p_store"></span></p>
+    <p>- 성 명 (대표자): <span id="p_owner"></span></p>
+    <p>- 연 락 처: <span id="p_phone"></span></p>
+  </div>
+  <div class="sec">
+    <h3>2. 컨설팅 수행 개요</h3>
+    <p>담당 컨설턴트: <span id="p_consultant"></span></p>
+    <p>본 수혜자는 상기 컨설턴트로부터 위와 같이 컨설팅서비스를 성실히 제공받았으며, 이에 따라 본 컨설팅 수행 확인서를 제출합니다.</p>
+  </div>
+  <table>
+    <thead><tr><th style="width:110px">회차</th><th>일시</th><th style="width:220px">서명</th></tr></thead>
+    <tbody id="p_rows"></tbody>
+  </table>
+</div>
+
+<script>
+const MAX=5, MIN=3;
+const $=s=>document.querySelector(s);
+let state={id:null,store:"",owner:"",phone:"",consultant:"",rounds:[]};
+
+// ---------- 서명 캔버스 ----------
+function makeSig(container, idx){
+  const wrap=document.createElement('div'); wrap.className='sig';
+  const c=document.createElement('canvas');
+  const hint=document.createElement('div'); hint.className='hint'; hint.textContent='여기에 손가락으로 서명';
+  const clr=document.createElement('button'); clr.className='clr'; clr.textContent='지우기';
+  wrap.append(c,hint,clr); container.appendChild(wrap);
+  const ctx=c.getContext('2d');
+  function resize(){
+    const r=c.getBoundingClientRect(); const dpr=window.devicePixelRatio||1;
+    const data=state.rounds[idx].sig;
+    c.width=r.width*dpr; c.height=r.height*dpr; ctx.scale(dpr,dpr);
+    ctx.lineWidth=2.4; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#000';
+    if(data){ const im=new Image(); im.onload=()=>{ctx.drawImage(im,0,0,r.width,r.height); hint.style.display='none';}; im.src=data; }
+  }
+  setTimeout(resize,0);
+  let drawing=false,last=null;
+  const pos=e=>{const r=c.getBoundingClientRect(); const p=e.touches?e.touches[0]:e; return {x:p.clientX-r.left,y:p.clientY-r.top};};
+  const start=e=>{e.preventDefault(); drawing=true; last=pos(e); hint.style.display='none';};
+  const move=e=>{ if(!drawing) return; e.preventDefault(); const p=pos(e); ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke(); last=p; };
+  const end=()=>{ if(!drawing) return; drawing=false; state.rounds[idx].sig=c.toDataURL('image/png'); save(); };
+  c.addEventListener('pointerdown',start); c.addEventListener('pointermove',move);
+  window.addEventListener('pointerup',end); c.addEventListener('pointerleave',end);
+  clr.onclick=()=>{ const r=c.getBoundingClientRect(); ctx.clearRect(0,0,r.width,r.height); state.rounds[idx].sig=null; hint.style.display=''; save(); };
+}
+
+// ---------- 회차 렌더 ----------
+function renderRounds(){
+  const box=$('#rounds'); box.innerHTML='';
+  state.rounds.forEach((r,i)=>{
+    const d=document.createElement('div'); d.className='round';
+    d.innerHTML=`<div class="t"><b>${i+1}회차</b>${state.rounds.length>MIN?`<button class="del" data-i="${i}">삭제</button>`:''}</div>
+      <label>일시</label><input type="date" data-i="${i}" class="date" value="${r.date||''}">`;
+    box.appendChild(d); makeSig(d,i);
+  });
+  box.querySelectorAll('.date').forEach(el=>el.oninput=e=>{state.rounds[+e.target.dataset.i].date=e.target.value; save();});
+  box.querySelectorAll('.del').forEach(el=>el.onclick=e=>{ if(confirm('이 회차를 삭제할까요?')){state.rounds.splice(+e.target.dataset.i,1); save(); renderRounds();} });
+  $('#addRound').style.display = state.rounds.length>=MAX?'none':'';
+}
+$('#addRound').onclick=()=>{ if(state.rounds.length<MAX){state.rounds.push({date:'',sig:null}); save(); renderRounds();} };
+
+// ---------- 저장 ----------
+function allSaved(){ try{return JSON.parse(localStorage.getItem('confirms')||'{}');}catch(e){return {};} }
+function save(){
+  ['store','owner','phone','consultant'].forEach(k=>state[k]=$('#'+k).value.trim());
+  if(!state.id) state.id=Date.now().toString(36);
+  const all=allSaved(); all[state.id]={...state,updated:Date.now()};
+  try{localStorage.setItem('confirms',JSON.stringify(all));}catch(e){}
+  renderSaved();
+}
+function load(id){
+  const all=allSaved(); if(!all[id]) return;
+  state=all[id]; ['store','owner','phone','consultant'].forEach(k=>$('#'+k).value=state[k]||'');
+  if(!state.rounds||!state.rounds.length) state.rounds=[{date:'',sig:null},{date:'',sig:null},{date:'',sig:null}];
+  renderRounds(); window.scrollTo(0,0);
+}
+function fresh(){
+  state={id:null,store:"",owner:"",phone:"",consultant:$('#consultant').value||"",rounds:[{date:'',sig:null},{date:'',sig:null},{date:'',sig:null}]};
+  ['store','owner','phone'].forEach(k=>$('#'+k).value=''); renderRounds(); window.scrollTo(0,0);
+}
+function renderSaved(){
+  const all=allSaved(); const box=$('#saved'); box.innerHTML='';
+  Object.values(all).sort((a,b)=>b.updated-a.updated).forEach(s=>{
+    const a=document.createElement('a'); a.href='#';
+    const done=(s.rounds||[]).filter(r=>r.sig).length;
+    a.innerHTML=`${s.store||'(매장명 없음)'}<small>${s.owner||''} · 서명 ${done}/${(s.rounds||[]).length}</small>`;
+    a.onclick=e=>{e.preventDefault(); load(s.id);};
+    const del=document.createElement('span'); del.textContent=' 삭제'; del.style.cssText='color:#c62828;font-size:12px;float:right';
+    del.onclick=e=>{e.preventDefault(); e.stopPropagation(); if(confirm(`${s.store} 삭제?`)){const all2=allSaved(); delete all2[s.id]; localStorage.setItem('confirms',JSON.stringify(all2)); if(state.id===s.id) fresh(); renderSaved();}};
+    a.appendChild(del); box.appendChild(a);
+  });
+  if(!box.innerHTML) box.innerHTML='<div class="msg">아직 없습니다</div>';
+}
+['store','owner','phone','consultant'].forEach(k=>$('#'+k).oninput=save);
+$('#newBtn').onclick=()=>{ if(confirm('새 매장을 시작할까요? (지금 것은 저장돼 있습니다)')) fresh(); };
+
+// ---------- PDF ----------
+function fmt(d){ if(!d) return ''; const [y,m,dd]=d.split('-'); return `${y}년 ${+m}월 ${+dd}일`; }
+$('#pdfBtn').onclick=async()=>{
+  save();
+  if(!state.store){alert('매장명을 입력해 주세요'); return;}
+  $('#p_store').textContent=state.store; $('#p_owner').textContent=state.owner;
+  $('#p_phone').textContent=state.phone; $('#p_consultant').textContent=state.consultant;
+  $('#p_rows').innerHTML=state.rounds.map((r,i)=>`<tr><td>${i+1}회차</td><td>${fmt(r.date)}</td><td>${r.sig?`<img src="${r.sig}">`:''}</td></tr>`).join('');
+  const btn=$('#pdfBtn'); btn.textContent='만드는 중…'; btn.disabled=true;
+  try{
+    const canvas=await html2canvas($('#paper'),{scale:2,backgroundColor:'#fff',useCORS:true});
+    const {jsPDF}=window.jspdf; const pdf=new jsPDF({unit:'mm',format:'a4'});
+    const w=210, h=canvas.height*w/canvas.width;
+    pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,w,Math.min(h,297));
+    const name=`컨설팅수행확인서_${state.store}.pdf`;
+    const blob=pdf.output('blob');
+    if(navigator.share && navigator.canShare && navigator.canShare({files:[new File([blob],name,{type:'application/pdf'})]})){
+      try{ await navigator.share({files:[new File([blob],name,{type:'application/pdf'})],title:name}); }
+      catch(e){ pdf.save(name); }
+    } else pdf.save(name);
+  }catch(e){ alert('PDF 생성 실패: '+e.message); }
+  btn.textContent='PDF 저장'; btn.disabled=false;
+};
+
+// ---------- 시작 ----------
+(function(){
+  const all=allSaved(); const ids=Object.keys(all);
+  if(ids.length){ const latest=Object.values(all).sort((a,b)=>b.updated-a.updated)[0]; load(latest.id); }
+  else fresh();
+  renderSaved();
+})();
+</script>
+</body>
+</html>
