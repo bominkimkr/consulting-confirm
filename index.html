@@ -89,6 +89,9 @@ input:focus{outline:2px solid var(--acc);border-color:transparent}
     <a id="r_dl" class="btn pri" style="text-align:center;text-decoration:none;margin-bottom:8px">다운로드</a>
     <button id="r_share" class="btn sec" style="margin-bottom:8px">카톡·메일로 보내기</button>
     <button id="r_open" class="btn sec" style="margin-bottom:8px">새 창에서 열기</button>
+    <button id="r_img" class="btn sec" style="margin-bottom:8px">이미지로 보기 (길게 눌러 저장)</button>
+    <div id="r_imgbox" style="display:none;max-height:45vh;overflow:auto;border:1px solid #ddd;border-radius:8px;margin-bottom:8px"><img id="r_imgel" style="width:100%;display:block"></div>
+    <div class="msg" style="margin:0 0 8px">카카오톡 안에서 열렸다면 다운로드가 막힙니다. 오른쪽 위 ⋯ → 「다른 브라우저로 열기」 뒤 다시 하거나, 「이미지로 보기」 후 사진을 길게 눌러 저장하세요.</div>
     <button id="r_close" class="btn" style="background:none;color:#777">닫기</button>
   </div>
 </div>
@@ -211,6 +214,7 @@ $('#pdfBtn').onclick=async()=>{
     pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,w,Math.min(h,297));
     const name=`컨설팅수행확인서_${state.store}.pdf`;
     const blob=pdf.output('blob'); const url=URL.createObjectURL(blob);
+    window.__pageImg=canvas.toDataURL('image/png');
     showResult(name, blob, url);
   }catch(e){ alert('PDF 생성 실패: '+e.message); }
   btn.textContent='PDF 저장'; btn.disabled=false;
@@ -221,6 +225,8 @@ function showResult(name, blob, url){
   $('#r_name').textContent=name;
   const a=$('#r_dl'); a.href=url; a.download=name;
   $('#r_open').onclick=()=>window.open(url,'_blank');
+  $('#r_imgbox').style.display='none';
+  $('#r_img').onclick=()=>{ $('#r_imgel').src=window.__pageImg||''; $('#r_imgbox').style.display=''; };
   const file=new File([blob],name,{type:'application/pdf'});
   const canShare=navigator.share && navigator.canShare && navigator.canShare({files:[file]});
   $('#r_share').style.display=canShare?'':'none';
