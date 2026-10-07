@@ -230,6 +230,22 @@ function showResult(name, blob, url){
 
 // ---------- 시작 ----------
 (function(){
+  // 주소에 ?store=…&owner=…&phone=…&consultant=…&d1=2026-09-09&d2=…&d3=… 가 있으면 미리 채운다
+  const q=new URLSearchParams(location.search);
+  if(q.get('store')){
+    const all=allSaved();
+    const dup=Object.values(all).find(s=>s.store===q.get('store'));
+    if(dup){ load(dup.id); }
+    else{
+      fresh();
+      $('#store').value=q.get('store')||''; $('#owner').value=q.get('owner')||''; $('#phone').value=q.get('phone')||''; $('#consultant').value=q.get('consultant')||$('#consultant').value;
+      const ds=[q.get('d1'),q.get('d2'),q.get('d3'),q.get('d4'),q.get('d5')].filter(Boolean);
+      if(ds.length){ state.rounds=ds.map(d=>({date:d,sig:null})); while(state.rounds.length<MIN) state.rounds.push({date:'',sig:null}); }
+      save(); renderRounds();
+    }
+    history.replaceState(null,'',location.pathname);
+    renderSaved(); return;
+  }
   const all=allSaved(); const ids=Object.keys(all);
   if(ids.length){ const latest=Object.values(all).sort((a,b)=>b.updated-a.updated)[0]; load(latest.id); }
   else fresh();
